@@ -8,54 +8,57 @@ import {
   Bot, X, File, BrainCircuit, Sparkles, Copy, Trash2,
   Code2, Terminal, Cpu, Database as DbIcon, Search, ListFilter,
   Info, Radio, Ghost, ChevronLeft, ChevronRight, Maximize2, User,
-  Activity, MessageCircle, MicOff, UserRound, Headphones, Play, Pause
+  Activity, MessageCircle, MicOff, UserRound, Headphones, Play, Pause,
+  Phone, Mail, Linkedin, Github, ExternalLink
 } from 'lucide-react';
-import { GoogleGenAI, Modality, LiveServerMessage } from "@google/genai";
+import { GoogleGenAI, Modality, LiveServerMessage, Type } from "@google/genai";
 
 // --- Constants ---
 const AA_KNOWLEDGE = `
 === AUTOMATION ANYWHERE A360 COMPREHENSIVE ACTION & TRIGGER INVENTORY ===
 
-PYTHON SCRIPT PACKAGE (EXPERT FOCUS):
+PYTHON SCRIPT PACKAGE:
 - Actions: Open, Execute script, Execute function, Close.
-- Selection Logic: Use when native actions lack complex logic, regex, or custom data transformation capabilities.
-- Best Practice: Use for advanced data manipulation, API parsing, complex calculations, regex validation.
+- Usage: For complex JSON/API parsing, Regex, and custom data math.
 
-SYSTEM & FLOW CONTROL:
-- Actions: Boolean, Clipboard, Comment, Datetime, Delay, Error handler (Try/Catch/Finally), If/Else, Loop (While/For each), Message box, Mouse, Number, NumberUtils, Prompt, Step, String, System, Utils, Wait, Window.
-- Error Handler: Implement try-catch blocks for all critical operations with proper logging.
-- Loop Optimization: Use For Each for collections, While for condition-based iterations.
+EXCEL ADVANCED PACKAGE:
+- Actions: Open, Close, Save, Save as, Create workbook, Get cells, Get multiple cells, Set cell, Delete cell, Find/Replace, Go to cell, Insert/Delete rows/columns, Filter table, Clear filter, Create table, Rename worksheet, Activate worksheet, Get worksheet names, Protect/Unprotect sheet, Append worksheet, Run macro.
 
-DATA & FILE MANAGEMENT:
-- Actions: CSV/TXT, Data Table, Database, Dictionary, File, Folder, Json, JSON Object Manager, JSONParser, List, PDF, PDFUtils, PGP, Text file, XML.
-- Database: Support for SQL Server, Oracle, MySQL with connection pooling.
-- Data Table: In-memory data structures for complex transformations.
+EXCEL BASIC PACKAGE:
+- Actions: Open, Close, Set cell, Get cell, Get multiple cells, Set cells, Insert/Delete rows/columns. (Note: Excel Basic doesn't need Excel installed).
 
-OFFICE & ENTERPRISE APPS:
-- Microsoft: Excel basic, Excel advanced, MS Word, Word, Microsoft 365 (Calendar, Excel, OneDrive, Outlook), Microsoft Teams.
-- Selection Logic: Prefer 'Excel advanced' for server-side processing and complex formatting. Use Excel Basic for simple read/write.
-- Google: G-Suite Apps, Google Sheets, Google Drive, Google Document AI.
-- ERP/CRM: SAP, SAP BAPI, SAP2, Salesforce, ServiceNow, Workday.
-- Integration Patterns: API-first approach, credential vault for authentication.
+DATABASE PACKAGE:
+- Actions: Connect, Disconnect, Export to data table, Insert/Update/Delete, Read from, Run stored procedure, Begin transaction, Commit, Rollback.
 
-AI & COGNITIVE:
-- Native: AI, IQ Bot (Extraction, Pre-processor, Local Device), Image Recognition, OCR.
-- Generative AI: OpenAI integration, Google Document AI, Anthropic Claude integration.
-- Use Cases: Invoice extraction, form processing, intelligent document classification.
+DATA TABLE PACKAGE:
+- Actions: Assign, Clear, Filter, Insert column, Insert row, Remove column, Remove row, Set value, Get value, Get number of rows/cols, Join, Merge, Search, Sort, Write to file.
 
-TRIGGERS (EVENT-BASED):
-- Email trigger (Outlook/SMTP): Monitor inbox for specific subjects/senders.
-- Files & folders: Watch for file creation, modification, deletion.
-- Hot key: Keyboard shortcuts for manual bot invocation.
-- Interface trigger: Monitor UI elements and window states.
-- Process trigger: Chain bot executions based on completion status.
-- ServiceNow trigger: Respond to ticket creation/updates.
+PDF PACKAGE:
+- Actions: Extract text, Extract image, Merge documents, Split document, Encrypt/Decrypt, Form fields extraction, OCR (Optical Character Recognition).
 
-ARCHITECTURE PATTERNS:
-- Modular Design: Separate bots for extraction, processing, validation, and reporting.
-- Queue-Based Processing: Use Work Queue for distributed execution.
-- Error Recovery: Implement retry logic with exponential backoff.
-- Audit Trail: Log all operations with timestamps and user context.
+DICTIONARY PACKAGE:
+- Actions: Put, Get, Remove, Assign, Size, Clear.
+
+LIST PACKAGE:
+- Actions: Add item, Clear, Get item, Remove item, Set item, Size, Sort.
+
+STRING PACKAGE:
+- Actions: Assign, Compare, Extract text, Find, Length, Lower case/Upper case, Replace, Reverse, Split, Substring, Trim, To number.
+
+WINDOW PACKAGE:
+- Actions: Close, Maximize, Minimize, Resize, Set focus, Get title.
+
+ERROR HANDLER:
+- Actions: Try, Catch, Finally, Throw.
+
+LOOP PACKAGE:
+- Actions: Loop, Break, Continue. (Iterators: Excel, Database, Data Table, Dictionary, List, File, Folder, Windows, While, For n times).
+
+RECORDER/UI AUTOMATION:
+- Actions: Capture, Object properties, Set text, Click, Select item, Get property.
+
+API/REST WEB SERVICES:
+- Actions: GET, POST, PUT, DELETE, PATCH (Part of the REST Web Services package).
 `;
 
 const SYSTEM_PROMPT = `You are RKS Automation Architect - the ultimate Automation Anywhere (AA) A360 Logic Engine with 10+ years of enterprise RPA experience.
@@ -64,74 +67,38 @@ ${AA_KNOWLEDGE}
 
 CORE PRINCIPLES:
 1. Solution Architecture: Design scalable, maintainable, production-ready automation solutions.
-2. Best Practice First: Always recommend enterprise-grade patterns over quick fixes.
-3. Technology Selection: Choose the most appropriate AA packages based on requirements.
-4. Error Handling: Implement comprehensive exception handling and logging.
-5. Performance: Optimization for speed, reliability, and resource efficiency.
+2. Technology Selection: Choose appropriate AA packages.
+3. Excel Automation: If the requirement involves complex Excel logic, generate a ready-to-paste Excel VBA macro.
 
-When a user provides a requirement, you must apply INTELLIGENT SELECTION LOGIC to determine the absolute best components for the bot.
+You must return a valid JSON object matching this schema:
+{
+  "solutionOverview": "High-level approach",
+  "detailedActions": "Step-by-step AA A360 actions",
+  "excelVbaCode": "Full VBA macro string (or empty if not needed)",
+  "pythonCode": "Full Python script string (or empty if not needed)",
+  "testingValidation": "Testing scenarios"
+}
 
-MANDATORY RESPONSE STRUCTURE:
-1. **Solution Overview & Architecture**:
-   - High-level solution approach
-   - Key design decisions and rationale
-   
-2. **Component Selection & Justification**: 
-   - Trigger selection with WHY
-   - Core Packages with specific actions and WHY
-   - Integration points and data flows
-   
-3. **Detailed Action Inventory**:
-   - Exact AA Packages and Actions in sequence
-   - Variable definitions and data types
-   - Configuration parameters
-   
-4. **Logic Flow Architecture**:
-   - Step-by-step process flow
-   - Decision points and branching logic
-   - Error handling strategy
-   - Retry and fallback mechanisms
-   
-5. **Python Integration (If Applicable)**:
-   - Complete Python script with error handling
-   - Input/output parameter definitions
-   - Integration with bot variables
-   
-6. **Configuration & Security**:
-   - Credential Vault entries
-   - Environment variables
-   - Connection strings and API endpoints
-   
-7. **Testing & Validation**:
-   - Test scenarios to validate
-   - Expected outcomes
-   - Edge cases to consider
+Professional, technical, and detailed style.`;
 
-RESPONSE STYLE:
-- Professional, technical, and detailed
-- Include specific package names and action names
-- Provide real-world context and examples
-- Highlight potential pitfalls and how to avoid them
-- Suggest optimization opportunities`;
+const LIVE_COPILOT_PROMPT_BASE = `You are RKS Live Interview Copilot, a Senior Technical Lead from India with 12+ years of A360 experience.
 
-const LIVE_COPILOT_PROMPT_BASE = `You are RKS Live Interview Copilot, an expert Automation Architect specializing in Automation Anywhere A360.
+### IDENTITY & TONE
+- **Persona**: Senior Indian Technical Architect.
+- **Natural Phrasing**: "See, basically...", "Actually, for this package...", "In A360, what happens is...", "I have used this extensively in my projects...", "Coming to that point...".
+- **Communication**: Professional, authoritative, yet helpful. Speak like a professional Indian tech lead.
+
+### PACKAGE DEEP-DIVE RULE (CRITICAL)
+- **IF THE INTERVIEWER ASKS ABOUT A SPECIFIC PACKAGE**: You must provide an exhaustive list of the actions available inside that package from the knowledge base provided. 
+- **DO NOT SUMMARIZE** the package. List the actual actions (e.g., for Excel Advanced: "Open, Close, Set Cell, Get Multiple Cells, Filter Table, Run Macro...").
+- **STRUCTURE**: Start with the persona filler, state the package utility briefly, and then explicitly name the actions.
 
 ### RESPONSE GUIDELINES
-- **BREVITY IS KEY**: Provide short, fast, and accurate answers.
-- **LENGTH**: Keep responses concise, ideally between **3 to 6 sentences**.
-- **ACCURACY**: Focus on the most direct technical solution. Mention specific A360 packages (e.g., "Excel Advanced", "IQ Bot", "Python Script") immediately.
-- **SPEED**: Get to the point quickly. Use a professional but snappy Indian technical lead tone.
+- **SHORT BUT CONTENT-DENSE**: Keep general answers to 3-6 sentences. 
+- **ACCURACY**: Use the exact names of actions and packages as per Automation Anywhere A360 documentation.
+- **FIRST PERSON**: Speak as the candidate ("I use...", "My approach involves...").
 
-### CORE IDENTITY
-- **Domain Mastery**: Expert knowledge of A360, Control Room, and Bot Runners.
-- **Communication Style**: Professional and direct. Use phrases like "See, basically...", "For this requirement, I would...", "Actually, the best way is...".
-
-### OUTPUT FORMAT (MANDATORY)
-- **ONLY THE SPOKEN SCRIPT**: No headers, no bullet points, no restating the question.
-- **NARRATIVE FLOW**: Provide a single, concise paragraph for easy reading.
-- **FIRST PERSON**: Speak as the candidate ("I use...", "My approach is...").
-
-Style: Expert, Fast, Accurate, Professional Indian Tech Lead.`;
+Style: Expert Indian Tech Lead, Fast, Accurate, Comprehensive on Packages.`;
 
 // --- Helpers ---
 const fileToBase64 = (file: File): Promise<string> => {
@@ -166,21 +133,27 @@ function encode(bytes: Uint8Array) {
   return btoa(binary);
 }
 
+interface BotSolution {
+  solutionOverview: string;
+  detailedActions: string;
+  excelVbaCode: string;
+  pythonCode: string;
+  testingValidation: string;
+}
+
 const RKSAssistant = () => {
-  const [activeSection, setActiveSection] = useState<'bot-builder' | 'chat' | 'interview' | 'live-interview'>('bot-builder');
+  const [activeSection, setActiveSection] = useState<'bot-builder' | 'chat' | 'interview' | 'live-interview' | 'contact'>('bot-builder');
   const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   
   // Section: Bot Builder
   const [botInput, setBotInput] = useState('');
   const [botFile, setBotFile] = useState<File | null>(null);
   const [botLoading, setBotLoading] = useState(false);
-  const [botSolution, setBotSolution] = useState<string | null>(null);
+  const [botSolution, setBotSolution] = useState<BotSolution | null>(null);
   
   // Section: Expert Chat
-  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'assistant', content: string, files?: string[]}[]>([]);
+  const [chatMessages, setChatMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [chatFiles, setChatFiles] = useState<File[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   
@@ -202,7 +175,6 @@ const RKSAssistant = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   
-  // Live Mode Controls
   const [liveMode, setLiveMode] = useState<'standard' | 'you-me'>('standard');
   const [interviewerButtonState, setInterviewerButtonState] = useState<'idle' | 'listening'>('idle');
 
@@ -212,14 +184,9 @@ const RKSAssistant = () => {
   useEffect(() => { liveModeRef.current = liveMode; }, [liveMode]);
   useEffect(() => { interviewerButtonStateRef.current = interviewerButtonState; }, [interviewerButtonState]);
   
-  // Phase Controller
   const isAnsweringRef = useRef(false);
   const phaseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const questionBufferRef = useRef<string[]>([]);
-
-  // Legacy Speech Refs
   const recognitionRef = useRef<any>(null);
-  const synthesisRef = useRef<SpeechSynthesis | null>(null);
 
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -239,10 +206,8 @@ const RKSAssistant = () => {
       recognitionRef.current.onerror = () => setIsListening(false);
       recognitionRef.current.onend = () => setIsListening(false);
     }
-    synthesisRef.current = window.speechSynthesis;
     return () => {
       if (recognitionRef.current) recognitionRef.current.stop();
-      if (synthesisRef.current) synthesisRef.current.cancel();
       stopLiveSession();
     };
   }, [activeSection]);
@@ -251,7 +216,6 @@ const RKSAssistant = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages, chatLoading]);
 
-  // Audio Level Monitor
   useEffect(() => {
     if (isLiveActive && analyserRef.current) {
       const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
@@ -294,7 +258,6 @@ const RKSAssistant = () => {
     });
   };
 
-  // --- Live API Core ---
   const startLiveSession = async () => {
     if (isLiveActive) return;
     setSessionStatus('connecting');
@@ -302,7 +265,6 @@ const RKSAssistant = () => {
     setAdviceHistory(['🎯 RKS Live Copilot Active - Listening live...']);
     setHistoryIndex(0);
     isAnsweringRef.current = false;
-    setInterviewerButtonState('idle');
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -316,12 +278,7 @@ const RKSAssistant = () => {
       analyser.fftSize = 256;
       analyserRef.current = analyser;
 
-      const dynamicInstruction = `${LIVE_COPILOT_PROMPT_BASE}
-      
-      Current app flags:
-      - live_mode: "${liveModeRef.current === 'you-me' ? 'live_by_you_me' : 'standard_live'}"
-      - interviewer_button: "${interviewerButtonStateRef.current === 'listening' ? 'listening' : 'idle'}"
-      `;
+      const dynamicInstruction = `${LIVE_COPILOT_PROMPT_BASE}\n\nRELEVANT A360 PACKAGE KNOWLEDGE:\n${AA_KNOWLEDGE}\n\nCurrent flags:\n- mode: "${liveModeRef.current}"\n- mic: "${interviewerButtonStateRef.current}"`;
 
       const sessionPromise = ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-12-2025',
@@ -335,11 +292,8 @@ const RKSAssistant = () => {
             scriptProcessor.onaudioprocess = (e) => {
               const isStandardListening = liveModeRef.current === 'standard';
               const isYouMeListening = liveModeRef.current === 'you-me' && (interviewerButtonStateRef.current === 'listening');
-              
               if (!isStandardListening && !isYouMeListening) return;
-              // If model is speaking, sample less frequently to prevent loop, but still listen for context
               if (isAnsweringRef.current && Math.random() > 0.15) return;
-
               const inputData = e.inputBuffer.getChannelData(0);
               const l = inputData.length;
               const int16 = new Int16Array(l);
@@ -358,35 +312,24 @@ const RKSAssistant = () => {
               const transcript = message.serverContent.inputTranscription.text || '';
               setIsInterviewerSpeaking(true);
               setTimeout(() => setIsInterviewerSpeaking(false), 2000);
-              
-              // Enhanced Question Detection
-              const questionPatterns = /\b(tell me|explain|how would you|what is|can you|describe|walk me through|what's your approach)\b/i;
-              if (questionPatterns.test(transcript) && !isAnsweringRef.current) {
-                 sessionPromise.then(session => {
-                   session.sendRealtimeInput({ text: `[Context Hint] Question detected: "${transcript}". Provide technical architect answer.` });
-                 });
-              }
             }
 
             if (message.serverContent?.outputTranscription) {
               isAnsweringRef.current = true;
               if (phaseTimeoutRef.current) clearTimeout(phaseTimeoutRef.current);
-              // Adjusted for shorter answers
               phaseTimeoutRef.current = setTimeout(() => { isAnsweringRef.current = false; }, 8000); 
 
               const newText = message.serverContent?.outputTranscription?.text || '';
               setAdviceHistory(prev => {
                 const current = [...prev];
                 const last = current[current.length - 1] || '';
-                
-                if (last.includes('Ready to assist') || last.includes('stopped') || last.includes('Active')) {
+                if (last.includes('Ready') || last.includes('stopped') || last.includes('Active')) {
                    current[current.length - 1] = newText;
                 } else if (message.serverContent?.turnComplete) {
                    current.push(newText);
                 } else {
                    current[current.length - 1] = last + newText;
                 }
-                
                 if (current.length > 50) current.shift();
                 return current;
               });
@@ -399,13 +342,9 @@ const RKSAssistant = () => {
             }
           },
           onerror: (e: any) => {
-            console.error('Live session error:', e);
+            console.error('Live error:', e);
             setSessionStatus('error');
-            if (e.message?.includes('inference')) {
-               setAdviceHistory(prev => [...prev, "System: Potential API throttle. Syncing..."]);
-            } else {
-               setIsLiveActive(false);
-            }
+            setIsLiveActive(false);
           },
           onclose: () => {
             setIsLiveActive(false);
@@ -422,13 +361,11 @@ const RKSAssistant = () => {
           outputAudioTranscription: {},
         }
       });
-
       liveSessionRef.current = { sessionPromise, stream, context: inputAudioContext };
     } catch (err) {
       console.error(err);
       setIsLiveActive(false);
       setSessionStatus('error');
-      setAdviceHistory(['Error: Live session failed. Check permissions.']);
     }
   };
 
@@ -446,7 +383,6 @@ const RKSAssistant = () => {
     setInterviewerButtonState('idle');
     setAudioLevel(0);
     setAdviceHistory(prev => [...prev, "🔴 Copilot session stopped."]);
-    setHistoryIndex(prev => prev + 1);
   };
 
   const handleGenerateBotSolution = async () => {
@@ -455,7 +391,7 @@ const RKSAssistant = () => {
     setBotSolution(null);
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const parts: any[] = [{ text: `Analyze requirement: "${botInput}"` }];
+      const parts: any[] = [{ text: `Generate AA A360 architectural solution for: "${botInput}"` }];
       if (botFile) {
         const base64 = await fileToBase64(botFile);
         parts.push({ inlineData: { data: base64, mimeType: botFile.type } });
@@ -463,15 +399,36 @@ const RKSAssistant = () => {
       const response = await ai.models.generateContent({
         model: 'gemini-3-pro-preview',
         contents: { parts },
-        config: { systemInstruction: SYSTEM_PROMPT }
+        config: { 
+          systemInstruction: SYSTEM_PROMPT,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              solutionOverview: { type: Type.STRING },
+              detailedActions: { type: Type.STRING },
+              excelVbaCode: { type: Type.STRING },
+              pythonCode: { type: Type.STRING },
+              testingValidation: { type: Type.STRING }
+            },
+            required: ["solutionOverview", "detailedActions", "testingValidation"]
+          }
+        }
       });
-      setBotSolution(response.text || "Failed.");
-    } catch (e) { setBotSolution("Error."); }
-    finally { setBotLoading(false); }
+      
+      if (response.text) {
+        const data = JSON.parse(response.text.trim());
+        setBotSolution(data);
+      }
+    } catch (e) { 
+      console.error(e);
+    } finally { 
+      setBotLoading(false); 
+    }
   };
 
   const handleSendChatMessage = async () => {
-    if (!chatInput.trim() && chatFiles.length === 0) return;
+    if (!chatInput.trim()) return;
     const input = chatInput;
     setChatMessages(prev => [...prev, { role: 'user', content: input }]);
     setChatInput('');
@@ -481,7 +438,7 @@ const RKSAssistant = () => {
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
         contents: input,
-        config: { systemInstruction: "You are RKS Automation Architect. Provide technical depth." }
+        config: { systemInstruction: "You are RKS Automation Architect. Provide technical depth on AA A360." }
       });
       setChatMessages(prev => [...prev, { role: 'assistant', content: response.text || "" }]);
     } finally { setChatLoading(false); }
@@ -496,9 +453,9 @@ const RKSAssistant = () => {
       const b64 = await fileToBase64(resume);
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: { parts: [{ text: "Start A360 technical interview based on this resume. Be a professional interviewer." }, { inlineData: { data: b64, mimeType: resume.type } }] },
+        contents: { parts: [{ text: "Start A360 technical interview based on this resume." }, { inlineData: { data: b64, mimeType: resume.type } }] },
       });
-      setInterviewMessages([{ role: 'interviewer', content: response.text || "Welcome. Tell me about your experience." }]);
+      setInterviewMessages([{ role: 'interviewer', content: response.text || "Welcome. Let's begin." }]);
     } finally { setInterviewLoading(false); }
   };
 
@@ -512,16 +469,20 @@ const RKSAssistant = () => {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: `Previous Interview context: ${interviewMessages.map(m => m.content).join('\n')}\nCandidate answer: ${answer}`,
+        contents: `Previous context: ${interviewMessages.map(m => m.content).join('\n')}\nAnswer: ${answer}`,
       });
       setInterviewMessages(prev => [...prev, { role: 'interviewer', content: response.text || "" }]);
     } finally { setInterviewLoading(false); }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
+
   const currentAdvice = adviceHistory[Math.min(historyIndex, adviceHistory.length - 1)] || "";
 
   return (
-    <div className="min-h-screen pb-12 bg-slate-950 text-slate-100 selection:bg-blue-500/30">
+    <div className="min-h-screen pb-12 bg-slate-950 text-slate-100 selection:bg-blue-500/30 font-sans">
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
         <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-indigo-600/10 rounded-full blur-[100px] animate-pulse delay-700"></div>
@@ -548,7 +509,8 @@ const RKSAssistant = () => {
             { id: 'bot-builder', icon: Bot, label: 'Bot Architect', color: 'bg-blue-600' },
             { id: 'chat', icon: MessageSquare, label: 'Expert Chat', color: 'bg-indigo-600' },
             { id: 'interview', icon: Briefcase, label: 'Interview Prep', color: 'bg-emerald-600' },
-            { id: 'live-interview', icon: Radio, label: 'Live Copilot', color: 'bg-rose-600' }
+            { id: 'live-interview', icon: Radio, label: 'Live Copilot', color: 'bg-rose-600' },
+            { id: 'contact', icon: User, label: 'Contact', color: 'bg-slate-700' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -575,7 +537,7 @@ const RKSAssistant = () => {
                   <textarea
                     value={botInput}
                     onChange={(e) => setBotInput(e.target.value)}
-                    placeholder="Describe your process logic..."
+                    placeholder="Describe your process requirement for A360..."
                     className="w-full h-64 p-6 bg-black/40 border border-white/10 rounded-2xl focus:ring-2 focus:ring-blue-500/50 outline-none transition-all text-lg scrollbar-thin placeholder:text-slate-600 resize-none"
                   />
                   <div className="absolute bottom-4 right-4 flex items-center gap-2">
@@ -596,9 +558,65 @@ const RKSAssistant = () => {
                   {botLoading ? <Loader2 className="animate-spin" /> : "Architect Solution"}
                 </button>
               </div>
+
               {botSolution && (
-                <div className="glass-card rounded-3xl p-8 border-emerald-500/20 animate-in slide-in-from-top-4 duration-500">
-                  <pre className="whitespace-pre-wrap font-mono text-sm leading-relaxed text-slate-300">{botSolution}</pre>
+                <div className="space-y-8 animate-in slide-in-from-top-4 duration-500">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="glass-card rounded-3xl p-8 border-white/10 h-fit">
+                       <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-blue-400">
+                         <Cpu className="w-5 h-5" /> Solution Overview
+                       </h3>
+                       <p className="text-slate-300 leading-relaxed mb-8">{botSolution.solutionOverview}</p>
+                       
+                       <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-emerald-400">
+                         <ListFilter className="w-5 h-5" /> Detailed Actions
+                       </h3>
+                       <pre className="whitespace-pre-wrap text-sm text-slate-300 font-mono bg-black/40 p-6 rounded-2xl border border-white/5 leading-relaxed">
+                         {botSolution.detailedActions}
+                       </pre>
+                    </div>
+
+                    <div className="space-y-8">
+                       {botSolution.excelVbaCode && (
+                         <div className="glass-card rounded-3xl p-8 border-blue-500/20">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-xl font-bold flex items-center gap-2 text-blue-400">
+                                <Terminal className="w-5 h-5" /> Excel VBA Macro
+                              </h3>
+                              <button onClick={() => copyToClipboard(botSolution.excelVbaCode)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 transition-all flex items-center gap-2 text-xs">
+                                <Copy className="w-4 h-4" /> Copy VBA
+                              </button>
+                            </div>
+                            <pre className="p-6 bg-slate-900 rounded-2xl font-mono text-sm text-blue-300 overflow-x-auto scrollbar-thin border border-white/5">
+                              {botSolution.excelVbaCode}
+                            </pre>
+                         </div>
+                       )}
+
+                       {botSolution.pythonCode && (
+                         <div className="glass-card rounded-3xl p-8 border-indigo-500/20">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-xl font-bold flex items-center gap-2 text-indigo-400">
+                                <Code2 className="w-5 h-5" /> Python Script
+                              </h3>
+                              <button onClick={() => copyToClipboard(botSolution.pythonCode)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 transition-all flex items-center gap-2 text-xs">
+                                <Copy className="w-4 h-4" /> Copy Script
+                              </button>
+                            </div>
+                            <pre className="p-6 bg-slate-900 rounded-2xl font-mono text-sm text-indigo-300 overflow-x-auto scrollbar-thin border border-white/5">
+                              {botSolution.pythonCode}
+                            </pre>
+                         </div>
+                       )}
+
+                       <div className="glass-card rounded-3xl p-8 border-white/10">
+                          <h3 className="text-xl font-bold mb-4 flex items-center gap-2 text-emerald-400">
+                            <CheckCircle className="w-5 h-5" /> Validation & Testing
+                          </h3>
+                          <p className="text-slate-300 leading-relaxed text-sm italic">{botSolution.testingValidation}</p>
+                       </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -669,7 +687,6 @@ const RKSAssistant = () => {
           {activeSection === 'live-interview' && (
             <div className="grid gap-8 animate-in fade-in slide-in-from-bottom-4 min-h-[750px] relative">
               <div className="glass-card rounded-3xl p-8 border-white/10 relative shadow-2xl">
-                {/* Mode Tab Switcher */}
                 <div className="flex justify-center mb-8">
                   <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-md shadow-lg">
                     <button 
@@ -739,11 +756,6 @@ const RKSAssistant = () => {
                       <span className="text-xs font-black text-rose-400 uppercase tracking-[0.3em] flex items-center gap-2">
                         <Sparkles className="w-4 h-4 animate-pulse" /> Live Suggestion Only
                       </span>
-                      {isLiveActive && (
-                        <span className="text-[10px] text-slate-500 font-bold uppercase mt-1">
-                          Mode: {liveMode === 'you-me' ? (interviewerButtonState === 'listening' ? 'LISTENING TO INTERVIEWER' : 'IDLE') : 'STANDARD LIVE LISTENING'}
-                        </span>
-                      )}
                     </div>
                     {adviceHistory.length > 1 && (
                       <div className="flex items-center gap-3 bg-black/40 px-5 py-2 rounded-[1.5rem] border border-white/10">
@@ -765,9 +777,6 @@ const RKSAssistant = () => {
                         <div className="h-full flex flex-col items-center justify-center text-slate-600 opacity-40 text-center py-20">
                           <BrainCircuit className="w-24 h-24 mb-6" />
                           <p className="text-2xl font-black uppercase tracking-widest">Awaiting Voice Input</p>
-                          <p className="text-sm mt-4 italic">
-                            {liveMode === 'you-me' ? 'Toggle floating Interviewer button to start capture.' : 'Session is active and listening to the whole room.'}
-                          </p>
                         </div>
                       )}
                     </div>
@@ -790,11 +799,10 @@ const RKSAssistant = () => {
                 </div>
               </div>
 
-              {/* Floating Interviewer Button (Visible only in You-Me mode) */}
               {activeSection === 'live-interview' && liveMode === 'you-me' && isLiveActive && (
                 <div className="fixed bottom-10 right-10 z-50 flex flex-col items-center gap-3 animate-in slide-in-from-bottom-8 duration-500">
                   <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl border backdrop-blur-md transition-all ${interviewerButtonState === 'listening' ? 'bg-rose-500 text-white border-rose-400 animate-pulse' : 'bg-slate-900/80 text-slate-400 border-white/10'}`}>
-                    {interviewerButtonState === 'listening' ? 'Listening to interviewer' : 'Interviewer (Press to listen)'}
+                    {interviewerButtonState === 'listening' ? 'Listening' : 'Ready'}
                   </span>
                   <button
                     onClick={toggleFloatingInterviewer}
@@ -808,6 +816,58 @@ const RKSAssistant = () => {
                   </button>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeSection === 'contact' && (
+            <div className="max-w-2xl mx-auto animate-in fade-in zoom-in-95 duration-500">
+              <div className="glass-card rounded-[3rem] p-12 border-white/10 shadow-2xl relative overflow-hidden text-center">
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/10 rounded-full blur-3xl"></div>
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl"></div>
+                
+                <div className="relative mb-8 flex justify-center">
+                  <div className="p-6 bg-slate-900 rounded-full border border-white/10 shadow-xl">
+                    <UserRound className="w-16 h-16 text-blue-400" />
+                  </div>
+                </div>
+
+                <h2 className="text-3xl font-black mb-4 uppercase tracking-tight">RKS Automation Architect</h2>
+                <p className="text-slate-400 mb-10 leading-relaxed italic font-light">
+                  "Ready to transform your business processes with world-class automation solutions. Let's discuss your requirements basically, and architecture the best possible bot for your enterprise."
+                </p>
+
+                <div className="grid gap-4 mb-10">
+                  <a 
+                    href="https://wa.me/919949424853" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-4 py-6 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xl transition-all shadow-xl shadow-emerald-600/20 active:scale-95 group"
+                  >
+                    <MessageCircle className="w-7 h-7 group-hover:animate-bounce" />
+                    CONTACT ON WHATSAPP
+                    <ExternalLink className="w-5 h-5 opacity-50" />
+                  </a>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-6 bg-white/5 rounded-2xl border border-white/10 flex flex-col items-center gap-2">
+                       <Phone className="w-5 h-5 text-blue-400" />
+                       <span className="text-xs font-bold text-slate-500 uppercase">Phone</span>
+                       <span className="font-mono text-sm">+91 9949424853</span>
+                    </div>
+                    <div className="p-6 bg-white/5 rounded-2xl border border-white/10 flex flex-col items-center gap-2">
+                       <Mail className="w-5 h-5 text-indigo-400" />
+                       <span className="text-xs font-bold text-slate-500 uppercase">Email</span>
+                       <span className="font-mono text-sm">rks.arch@a360.com</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-center gap-6 pt-8 border-t border-white/5">
+                  <Linkedin className="w-6 h-6 text-slate-400 hover:text-blue-500 cursor-pointer transition-colors" />
+                  <Github className="w-6 h-6 text-slate-400 hover:text-white cursor-pointer transition-colors" />
+                  <Briefcase className="w-6 h-6 text-slate-400 hover:text-emerald-400 cursor-pointer transition-colors" />
+                </div>
+              </div>
             </div>
           )}
         </main>
