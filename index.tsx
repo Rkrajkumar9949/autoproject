@@ -150,6 +150,7 @@ const RKSAssistant = () => {
   const [botFile, setBotFile] = useState<File | null>(null);
   const [botLoading, setBotLoading] = useState(false);
   const [botSolution, setBotSolution] = useState<BotSolution | null>(null);
+  const [copyFeedback, setCopyFeedback] = useState(false);
   
   // Section: Expert Chat
   const [chatMessages, setChatMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
@@ -479,10 +480,34 @@ const RKSAssistant = () => {
     navigator.clipboard.writeText(text);
   };
 
+  const copyFullSolution = () => {
+    if (!botSolution) return;
+    const text = `
+BOT ARCHITECT SOLUTION
+======================
+
+OVERVIEW:
+${botSolution.solutionOverview}
+
+DETAILED ACTIONS:
+${botSolution.detailedActions}
+
+${botSolution.excelVbaCode ? `EXCEL VBA MACRO:\n${botSolution.excelVbaCode}\n` : ''}
+${botSolution.pythonCode ? `PYTHON SCRIPT:\n${botSolution.pythonCode}\n` : ''}
+
+VALIDATION & TESTING:
+${botSolution.testingValidation}
+    `.trim();
+    navigator.clipboard.writeText(text).then(() => {
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    });
+  };
+
   const currentAdvice = adviceHistory[Math.min(historyIndex, adviceHistory.length - 1)] || "";
 
   return (
-    <div className="min-h-screen pb-12 bg-slate-950 text-slate-100 selection:bg-blue-500/30 font-sans">
+    <div className="min-h-screen pb-12 bg-slate-950 text-slate-100 selection:bg-blue-500/30 font-sans overflow-x-hidden">
       <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px] animate-pulse"></div>
         <div className="absolute bottom-[-5%] right-[-5%] w-[30%] h-[30%] bg-indigo-600/10 rounded-full blur-[100px] animate-pulse delay-700"></div>
@@ -550,13 +575,25 @@ const RKSAssistant = () => {
                     </label>
                   </div>
                 </div>
-                <button
-                  onClick={handleGenerateBotSolution}
-                  disabled={botLoading}
-                  className="w-full md:w-auto flex items-center justify-center gap-3 px-12 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-blue-600/20"
-                >
-                  {botLoading ? <Loader2 className="animate-spin" /> : "Architect Solution"}
-                </button>
+                <div className="flex flex-wrap gap-4">
+                  <button
+                    onClick={handleGenerateBotSolution}
+                    disabled={botLoading}
+                    className="flex-1 md:flex-none flex items-center justify-center gap-3 px-12 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-blue-600/20"
+                  >
+                    {botLoading ? <Loader2 className="animate-spin" /> : "Architect Solution"}
+                  </button>
+                  
+                  {botSolution && (
+                    <button
+                      onClick={copyFullSolution}
+                      className="flex-1 md:flex-none flex items-center justify-center gap-3 px-12 py-5 bg-white/10 hover:bg-white/20 text-slate-200 rounded-2xl font-bold text-lg transition-all border border-white/10"
+                    >
+                      {copyFeedback ? <CheckCircle className="text-emerald-400" /> : <Copy />}
+                      {copyFeedback ? "Copied!" : "Copy Full Solution"}
+                    </button>
+                  )}
+                </div>
               </div>
 
               {botSolution && (
@@ -876,7 +913,22 @@ const RKSAssistant = () => {
   );
 };
 
-const rootElement = document.getElementById('root');
-if (rootElement) {
-  createRoot(rootElement).render(<RKSAssistant />);
+// Robust rendering to ensure DOM element is available
+const initApp = () => {
+  const rootElement = document.getElementById('root');
+  if (rootElement) {
+    createRoot(rootElement).render(<RKSAssistant />);
+  } else {
+    // Retry once after a short delay if not found
+    setTimeout(() => {
+      const retryElement = document.getElementById('root');
+      if (retryElement) createRoot(retryElement).render(<RKSAssistant />);
+    }, 100);
+  }
+};
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
 }
